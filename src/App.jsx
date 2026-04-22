@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { 
-  getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, query 
+  getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc 
 } from 'firebase/firestore';
 import { 
   getAuth, onAuthStateChanged, signInAnonymously 
 } from 'firebase/auth';
+import { 
+  Users, UserPlus, Link as LinkIcon, Hexagon, Download, Settings2, 
+  Trash2, Upload, Move, ZoomIn, ZoomOut, Maximize, X, Check, ArrowRightLeft, ArrowRight
+} from 'lucide-react';
 import * as d3 from 'd3';
 
-// --- Firebase 配置 ---
+// --- Firebase 配置 (直接寫入物件，解決白屏問題) ---
 const firebaseConfig = {
   apiKey: "AIzaSyDV06_5tTecR4q9EZUQ32IBy91KsFxsCHA",
   authDomain: "hogwarts-pbta-relationsh-31ba9.firebaseapp.com",
@@ -18,10 +22,11 @@ const firebaseConfig = {
   appId: "1:361459597273:web:66c7174720052f826323c8"
 };
 
+// 初始化 Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = 'org-chart-gen-006'; 
+const appId = 'org-chart-gen-006'; // 固定 ID 方便開發
 
 const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2UyZThmMCI+PHBhdGggZD0iTTEyIDJDMiAyIDIgMTEgMiAxMVMxMiAyMiAxMiAyMnMxMC0xMSAxMC0xMVMyMiAyIDEyIDJ6bTAgNWEzIDMgMCAxIDEgMCA2IDMgMyAwIDAgMSAwLTZ6bTcgMTFIMTV2LTFjMC0xLjY2LTEuMzQtMy0zLTNzLTMgMS4zNC0zIDN2MUg1di0xYzAtMi43NiAyLjI0LTUgNS01aDRjMi43NiAwIDUgMi4yNCA1IDV2MXoiLz48L3N2Zz4=`;
 
