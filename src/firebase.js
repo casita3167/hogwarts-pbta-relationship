@@ -1,11 +1,9 @@
-// Import the functions you need from the SDKs you need
+// src/firebase.js
 import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
+// 這些就是你截圖中的資訊
 const firebaseConfig = {
-  apiKey: "AIzaSyDV06_5tTecR4q9EZUQ32IBy91KsFxsCHA",
+  apiKey: "AIzaSyDV06_5tTecR4q9EZUQ32IBy91KsFxSCHA",
   authDomain: "hogwarts-pbta-relationsh-31ba9.firebaseapp.com",
   projectId: "hogwarts-pbta-relationsh-31ba9",
   storageBucket: "hogwarts-pbta-relationsh-31ba9.firebasestorage.app",
@@ -13,5 +11,6 @@ const firebaseConfig = {
   appId: "1:361459597273:web:66c7174720052f826323c8"
 };
 
-// Initialize Firebase
+// 初始化 Firebase
 const app = initializeApp(firebaseConfig);
+export default app;

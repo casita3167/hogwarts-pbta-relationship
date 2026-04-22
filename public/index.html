@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>組織關係圖生成器 - 部署版</title>
+    
+    <!-- 1. 載入必要的外部函式庫 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- 載入 React 與 Babel (用於瀏覽器端解析 JSX) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.10/babel.min.js"></script>
+
+    <!-- 載入 Lucide 圖標 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- 3. 嵌入自定義 CSS -->
+    <style>
+        .custom-font-stack {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Microsoft JhengHei", "微軟正黑體";
+        }
+        svg { background-color: #ffffff; }
+        .group-hull { transition: opacity 0.3s ease; pointer-events: none; }
+        .node-group, .link-path, .link-label { transition: opacity 0.3s ease; }
+        text { pointer-events: none; user-select: none; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // 這裡就是你需要的 React 代碼邏輯
+        const { useState, useEffect, useRef } = React;
+        
+        // 注意：在正式環境中請替換為你的 Firebase 初始化邏輯
+        // 這裡假設環境變數已由執行環境提供
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'org-chart-pro-v2';
+        
+        // 假設 Firebase 已經載入（透過其他 script 標籤或模組）
+        // 以下為組件邏輯簡化版，確保可執行
+        const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2UyZThmMCI+PHBhdGggZD0iTTEyIDJDMiAyIDIgMTEgMiAxMVMxMiAyMiAxMiAyMnMxMC0xMSAxMC0xMVMyMiAyIDEyIDJ6bTAgNWEzIDMgMCAxIDEgMCA2IDMgMyAwIDAgMSAwLTZ6bTcgMTFIMTV2LTFjMC0xLjY2LTEuMzQtMy0zLTNzLTMgMS4zNC0zIDN2MUg1di0xYzAtMi43NiAyLjI0LTUgNS01aDRjMi43NiAwIDUgMi4yNCA1IDV2MXoiLz48L3N2Zz4=`;
+
+        const App = () => {
+            const [nodes, setNodes] = useState([]);
+            const [links, setLinks] = useState([]);
+            const [selectedNode, setSelectedNode] = useState(null);
+            const [viewMode, setViewMode] = useState('force');
+            const [isSidebarOpen, setSidebarOpen] = useState(true);
+            const [editingName, setEditingName] = useState("");
+
+            const svgRef = useRef(null);
+            const containerRef = useRef(null);
+            const simulationRef = useRef(null);
+
+            // 這裡模擬資料獲取，實際部署時請接回 Firestore onSnapshot
+            useEffect(() => {
+                // 模擬數據
+                setNodes([{ id: '1', name: '中心人物', x: 400, y: 300 }]);
+                setLinks([]);
+            }, []);
+
+            useEffect(() => {
+                setEditingName(selectedNode?.name ?? "");
+            }, [selectedNode]);
+
+            // D3 渲染邏輯
+            useEffect(() => {
+                if (!svgRef.current || nodes.length === 0) return;
+                const width = containerRef.current.clientWidth;
+                const height = containerRef.current.clientHeight;
+                const svg = d3.select(svgRef.current);
+                svg.selectAll("*").remove();
+                const g = svg.append("g");
+
+                const zoom = d3.zoom().scaleExtent([0.1, 5]).on("zoom", (e) => g.attr("transform", e.transform));
+                svg.call(zoom);
+
+                const nodeElements = g.selectAll(".node-group")
+                    .data(nodes)
+                    .enter().append("g")
+                    .attr("class", "node-group")
+                    .attr("cursor", "pointer")
+                    .on("click", (e, d) => { e.stopPropagation(); setSelectedNode(d); });
+
+                nodeElements.append("circle").attr("r", 32).attr("fill", "#fff").attr("stroke", "#e2e8f0").attr("stroke-width", 2);
+                nodeElements.append("text").attr("dy", 50).attr("text-anchor", "middle").text(d => d.name);
+
+                const simulation = d3.forceSimulation(nodes)
+                    .force("charge", d3.forceManyBody().strength(-200))
+                    .force("center", d3.forceCenter(width / 2, height / 2))
+                    .on("tick", () => {
+                        nodeElements.attr("transform", d => `translate(${d.x},${d.y})`);
+                    });
+                simulationRef.current = simulation;
+            }, [nodes]);
+
+            return (
+                <div className="flex h-screen w-full bg-slate-50 overflow-hidden custom-font-stack">
+                    <aside className={`bg-white border-r transition-all duration-300 flex flex-col z-30 ${isSidebarOpen ? 'w-80' : 'w-0'}`}>
+                        <div className="p-4 bg-indigo-600 text-white flex justify-between items-center">
+                            <h1 className="font-bold truncate text-lg">組織生成器</h1>
+                            <button onClick={() => setSidebarOpen(false)} className="p-1">✕</button>
+                        </div>
+                        <div className="p-4 flex-1 overflow-y-auto">
+                            {selectedNode ? (
+                                <div className="space-y-4">
+                                    <h2 className="font-bold border-b pb-2">編輯角色</h2>
+                                    <label className="block">
+                                        <span className="text-xs text-slate-400 font-bold uppercase">名稱</span>
+                                        <input 
+                                            type="text" 
+                                            value={editingName} 
+                                            onChange={(e) => setEditingName(e.target.value)}
+                                            className="w-full border rounded p-2 text-sm mt-1"
+                                        />
+                                    </label>
+                                    <button className="w-full bg-indigo-600 text-white py-2 rounded font-bold shadow-md hover:bg-indigo-700 transition-all">儲存變更</button>
+                                </div>
+                            ) : (
+                                <p className="text-center text-slate-300 mt-20">請點擊畫布上的角色</p>
+                            )}
+                        </div>
+                    </aside>
+
+                    <main className="flex-1 relative bg-white" ref={containerRef}>
+                        <div className="absolute top-6 left-6 z-20 flex gap-2">
+                            {!isSidebarOpen && <button onClick={() => setSidebarOpen(true)} className="bg-white p-2 rounded shadow border">⚙️</button>}
+                        </div>
+                        <svg ref={svgRef} className="w-full h-full" onClick={() => setSelectedNode(null)} />
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
